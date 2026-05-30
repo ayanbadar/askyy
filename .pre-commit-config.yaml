@@ -1,0 +1,49 @@
+# See https://pre-commit.com for more information
+# Install (from repo root):
+#   pip install -r requirements-dev.txt
+#   cd frontend && npm install
+#   pre-commit install
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.13
+    hooks:
+      - id: ruff
+        name: ruff lint (backend)
+        files: ^backend/
+        args: [--fix]
+      - id: ruff-format
+        name: ruff format (backend)
+        files: ^backend/
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        name: prettier (frontend)
+        files: ^frontend/
+        types_or: [javascript, jsx, ts, tsx, json, css, markdown, html, yaml]
+
+  - repo: local
+    hooks:
+      - id: eslint-frontend
+        name: eslint (frontend)
+        entry: npm run lint --prefix frontend
+        language: system
+        files: ^frontend/
+        types: [file]
+        pass_filenames: false
+        require_serial: true

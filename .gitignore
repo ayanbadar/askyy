@@ -1,0 +1,23 @@
+# Monorepo
+.venv/
+venv/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Dependencies (frontend installs in frontend/node_modules)
+node_modules/
+
+# Environment
+.env
+.env.local
+
+# Build output
+dist/
+build/
