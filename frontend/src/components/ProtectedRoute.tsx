@@ -1,6 +1,6 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { Spinner } from '@/components/Spinner';
-import { useAuth } from '@/contexts/AuthContext';
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { LoadingState } from "@/components/LoadingState";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function ProtectedRoute() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -9,7 +9,7 @@ export function ProtectedRoute() {
   if (isLoading) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
-        <Spinner label="Checking session…" />
+        <LoadingState label="Checking session…" />
       </div>
     );
   }

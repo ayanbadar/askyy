@@ -22,7 +22,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["config", "core"]
+known-first-party = ["auth", "config", "core"]
 
 [tool.ruff.format]
 quote-style = "single"

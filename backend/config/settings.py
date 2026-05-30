@@ -1,3 +1,4 @@
+from datetime import timedelta
 from pathlib import Path
 
 import environ
@@ -23,9 +24,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Third-party
     'rest_framework',
+    'rest_framework_simplejwt',
+    'drf_spectacular',
     'corsheaders',
     # Local
     'core',
+    'auth.apps.AuthConfig',
 ]
 
 MIDDLEWARE = [
@@ -102,13 +106,39 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Django REST Framework
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': ('rest_framework.permissions.AllowAny',),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': ('rest_framework.permissions.IsAuthenticated',),
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
         *(('rest_framework.renderers.BrowsableAPIRenderer',) if DEBUG else ()),
     ),
     'DEFAULT_PARSER_CLASSES': ('rest_framework.parsers.JSONParser',),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'EXCEPTION_HANDLER': 'core.exceptions.custom_exception_handler',
+}
+
+# Google OAuth (Sign in with Google — Web client ID)
+GOOGLE_OAUTH_CLIENT_ID = env('GOOGLE_OAUTH_CLIENT_ID', default='')
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(
+        minutes=env.int('JWT_ACCESS_TOKEN_LIFETIME_MINUTES', default=60),
+    ),
+    'REFRESH_TOKEN_LIFETIME': timedelta(
+        days=env.int('JWT_REFRESH_TOKEN_LIFETIME_DAYS', default=7),
+    ),
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Askyy API',
+    'DESCRIPTION': 'REST API documentation for the Askyy backend.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
 
 # Development-only settings

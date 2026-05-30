@@ -1,4 +1,4 @@
-import { apiClient } from '@/api/client';
+import { apiClient } from "@/api/client";
 
 export interface HealthResponse {
   status: string;
@@ -6,6 +6,6 @@ export interface HealthResponse {
 }
 
 export async function getHealth(): Promise<HealthResponse> {
-  const { data } = await apiClient.get<HealthResponse>('/health');
+  const { data } = await apiClient.get<HealthResponse>("/health/");
   return data;
 }

@@ -8,6 +8,8 @@ Minimal Django REST API boilerplate.
 - **Django REST Framework** — JSON API
 - **django-cors-headers** — frontend CORS
 - **django-environ** — environment-based configuration
+- **drf-spectacular** — OpenAPI 3 / Swagger documentation
+- **djangorestframework-simplejwt** — JWT authentication
 
 ## Getting started
 
@@ -41,16 +43,52 @@ Create an admin user:
 python manage.py createsuperuser
 ```
 
+## API documentation
+
+Interactive Swagger UI: [http://localhost:8000/api/docs/](http://localhost:8000/api/docs/)
+
+ReDoc: [http://localhost:8000/api/docs/redoc/](http://localhost:8000/api/docs/redoc/)
+
+OpenAPI schema: [http://localhost:8000/api/schema/](http://localhost:8000/api/schema/)
+
 ## API endpoints
 
-| Method | Path           | Description  |
-| ------ | -------------- | ------------ |
-| GET    | `/api/health/` | Health check |
+| Method | Path                | Auth     | Description                    |
+| ------ | ------------------- | -------- | ------------------------------ |
+| GET    | `/api/health/`      | None     | Health check                   |
+| POST   | `/api/auth/google/` | None     | Google ID token → JWT tokens   |
+| POST   | `/api/auth/login/`  | None     | Obtain access & refresh tokens |
+| POST   | `/api/auth/refresh/`| None     | Refresh access token           |
+| GET    | `/api/auth/me/`     | Bearer   | Current user profile           |
 
 ### Example request
 
 ```bash
 curl http://localhost:8000/api/health/
+```
+
+Login (use a user from `createsuperuser` or another Django user):
+
+```bash
+curl -X POST http://localhost:8000/api/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "your-password"}'
+```
+
+### Google SSO setup
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create an **OAuth 2.0 Client ID** (type: **Web application**).
+2. Add **Authorized JavaScript origins**: `http://localhost:5173`, `http://127.0.0.1:5173`
+3. Copy the **Client ID** into both env files:
+   - `backend/.env` → `GOOGLE_OAUTH_CLIENT_ID=...`
+   - `frontend/.env` → `VITE_GOOGLE_CLIENT_ID=...` (same value)
+4. Restart backend and frontend dev servers.
+
+Call protected endpoints with the access token:
+
+```bash
+curl http://localhost:8000/api/some-endpoint/ \
+  -H "Authorization: Bearer <access-token>"
 ```
 
 ## Project structure
@@ -62,6 +100,7 @@ backend/
 │   ├── urls.py             # Root URL routing
 │   ├── wsgi.py
 │   └── asgi.py
+├── auth/                   # JWT login & token refresh
 ├── core/                   # Health check + shared API utilities
 ├── manage.py
 └── requirements.txt
@@ -73,6 +112,7 @@ backend/
 - **Environment variables** — secrets and config via `.env`
 - **CORS** — configured for the Vite dev server (`localhost:5173`)
 - **Normalized errors** — `{ "message": "..." }` for frontend compatibility
+- **JWT auth** — `IsAuthenticated` by default; public views opt in with `AllowAny`
 
 Add domain apps (e.g. `users`, `products`) under `backend/` as your project grows.
 
