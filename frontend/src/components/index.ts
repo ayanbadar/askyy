@@ -1,4 +1,4 @@
-export { ErrorBoundary } from '@/components/ErrorBoundary';
-export { Layout } from '@/components/Layout';
-export { ProtectedRoute } from '@/components/ProtectedRoute';
-export { Spinner } from '@/components/Spinner';
+export { ErrorBoundary } from "@/components/ErrorBoundary";
+export { Layout } from "@/components/Layout";
+export { LoadingState } from "@/components/LoadingState";
+export { ProtectedRoute } from "@/components/ProtectedRoute";

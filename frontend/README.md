@@ -1,6 +1,6 @@
 # Askyy Frontend
 
-React boilerplate with Vite, TypeScript, TanStack Query, Axios, React Router, Tailwind CSS, and auth scaffolding.
+React app with **Vite**, **TypeScript**, **Tailwind CSS v4**, **shadcn/ui**, TanStack Query, Axios, and React Router.
 
 ## Getting started
 
@@ -13,6 +13,56 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173).
 
+Ensure the Django API is running on port **8000** and create a user:
+
+```bash
+cd ../backend
+python manage.py createsuperuser
+```
+
+## Stack
+
+| Tool            | Role                                             |
+| --------------- | ------------------------------------------------ |
+| Tailwind CSS v4 | Utility styling (`@tailwindcss/vite`)            |
+| shadcn/ui       | Accessible UI primitives in `src/components/ui/` |
+| Lucide React    | Icons                                            |
+| TanStack Query  | Server state                                     |
+| Axios           | HTTP client + JWT                                |
+
+## shadcn/ui
+
+Configured via `components.json`. Theme tokens live in `src/styles/index.css`.
+
+Add more components:
+
+```bash
+npx shadcn@latest add dialog dropdown-menu
+```
+
+Import from `@/components/ui/*`:
+
+```tsx
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+```
+
+## Auth flow
+
+1. **Sign in** (`/login`) — Google SSO (when `VITE_GOOGLE_CLIENT_ID` is set) or username/password via `POST /api/auth/login`
+2. **Session restore** — `GET /api/auth/me` with Bearer token
+3. **Protected routes** — `/` and `/dashboard` require auth
+4. **Token refresh** — automatic on `401` via Axios interceptor
+
+## Environment variables
+
+| Variable                | Description                | Default                       |
+| ----------------------- | -------------------------- | ----------------------------- |
+| `VITE_API_BASE_URL`     | Backend API base           | `http://localhost:8000/api`   |
+| `VITE_GOOGLE_CLIENT_ID` | Google OAuth Web client ID | (empty — hides Google button) |
+
+During `npm run dev`, Vite proxies `/api` to `http://localhost:8000`.
+
 ## Scripts
 
 | Command           | Description              |
@@ -21,80 +71,3 @@ Open [http://localhost:5173](http://localhost:5173).
 | `npm run build`   | Production build         |
 | `npm run preview` | Preview production build |
 | `npm run lint`    | Run ESLint               |
-
-## Project structure
-
-```
-src/
-├── api/              # Axios client and API modules
-├── components/       # Reusable UI + ProtectedRoute
-├── constants/        # Shared constants (auth token key)
-├── contexts/         # AuthProvider + useAuth hook
-├── hooks/            # React Query hooks + useAsync
-├── lib/              # QueryClient configuration
-├── pages/            # Route-level pages
-├── styles/           # Tailwind entry CSS
-├── types/            # Shared TypeScript types
-├── App.tsx           # Route definitions
-└── main.tsx          # Providers (Query, Auth, Router)
-```
-
-## Features
-
-### Axios HTTP client
-
-Centralized instance in `src/api/client.ts` with:
-
-- Base URL from environment
-- Auth token injection
-- 401 handling and normalized errors
-
-### TanStack Query
-
-Server state is managed with React Query. Example:
-
-```ts
-import { useQuery } from '@tanstack/react-query';
-import { getHealth } from '@/api';
-
-export function useHealthQuery() {
-  return useQuery({
-    queryKey: ['health'],
-    queryFn: getHealth,
-  });
-}
-```
-
-DevTools are enabled in development (bottom-left panel).
-
-### Auth
-
-- `AuthProvider` restores session from `localStorage` via `GET /auth/me`
-- `LoginPage` at `/login` calls `POST /auth/login`
-- `ProtectedRoute` guards `/dashboard` and redirects unauthenticated users
-
-Expected API responses:
-
-```ts
-// POST /auth/login
-{ token: string; user: { id: string; email: string; name: string } }
-
-// GET /auth/me (Bearer token)
-{ id: string; email: string; name: string }
-```
-
-### Tailwind CSS v4
-
-Utility-first styling via `@tailwindcss/vite`. Global styles live in `src/styles/index.css`.
-
-## Environment variables
-
-| Variable            | Description      | Default                     |
-| ------------------- | ---------------- | --------------------------- |
-| `VITE_API_BASE_URL` | Backend API base | `http://localhost:3000/api` |
-
-## Path aliases
-
-```ts
-import { Layout } from '@/components/Layout';
-```
