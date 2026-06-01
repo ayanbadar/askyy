@@ -1,49 +1,18 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { LoadingState } from "@/components/LoadingState";
+import { AdminDashboardPage } from "@/pages/AdminDashboardPage";
+import { UserDashboardPage } from "@/pages/UserDashboardPage";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function DashboardPage() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
 
-  return (
-    <section className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-normal">Dashboard</h1>
-        <p className="mt-2 text-muted-foreground">
-          Protected route — only visible when authenticated.
-        </p>
-      </div>
+  if (isLoading) {
+    return <LoadingState label="Loading dashboard…" className="py-16" />;
+  }
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-          <CardDescription>Your account details from the API</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <dl>
-            <div className="flex justify-between gap-4 py-3">
-              <dt className="text-muted-foreground">Username</dt>
-              <dd className="font-medium">{user?.username}</dd>
-            </div>
-            <Separator />
-            <div className="flex justify-between gap-4 py-3">
-              <dt className="text-muted-foreground">Name</dt>
-              <dd className="font-medium">{user?.name}</dd>
-            </div>
-            <Separator />
-            <div className="flex justify-between gap-4 py-3">
-              <dt className="text-muted-foreground">Email</dt>
-              <dd className="font-medium">{user?.email || "—"}</dd>
-            </div>
-          </dl>
-        </CardContent>
-      </Card>
-    </section>
-  );
+  if (user?.is_superuser) {
+    return <AdminDashboardPage />;
+  }
+
+  return <UserDashboardPage />;
 }

@@ -5,7 +5,7 @@ import {
   useId,
   useState,
 } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import {
   CircleAlert,
   Eye,
@@ -69,7 +69,7 @@ export function LoginPage() {
   const passwordId = useId();
   const from =
     (location.state as { from?: { pathname: string } } | null)?.from
-      ?.pathname ?? "/";
+      ?.pathname ?? "/dashboard";
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -257,6 +257,16 @@ export function LoginPage() {
                 )}
               </Button>
             </form>
+
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+              Don&apos;t have an account?{" "}
+              <Link
+                to="/signup"
+                className="font-medium text-primary underline-offset-4 hover:underline"
+              >
+                Sign up
+              </Link>
+            </p>
           </CardContent>
         </Card>
       </section>

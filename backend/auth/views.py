@@ -13,11 +13,17 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from auth.serializers import (
     GoogleAuthSerializer,
+    ResendSignupOtpSerializer,
+    SignupResponseSerializer,
+    SignupSerializer,
     TokenPairResponseSerializer,
     TokenRefreshResponseSerializer,
     UserSerializer,
+    VerifySignupSerializer,
 )
 from auth.services import GoogleAuthError, google_auth_service
+from auth.services.signup import SignupError, signup_service
+from settings_app.policies import is_public_signup_enabled
 
 
 class LoginView(TokenObtainPairView):
@@ -88,6 +94,103 @@ class GoogleAuthView(APIView):
         )
 
 
+class SignupView(APIView):
+    """Register a new account and send an email verification code."""
+
+    permission_classes = (AllowAny,)
+
+    @extend_schema(
+        request=SignupSerializer,
+        responses={201: SignupResponseSerializer},
+        description=(
+            'Create an inactive account and email a one-time verification code.'
+        ),
+        tags=['Auth'],
+    )
+    def post(self, request: Request) -> Response:
+        if not is_public_signup_enabled():
+            return Response(
+                {'message': 'Public sign-up is currently disabled.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = SignupSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            signup_service.register(**serializer.validated_data)
+        except SignupError as exc:
+            return Response({'message': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {
+                'message': 'Verification code sent to your email.',
+                'email': serializer.validated_data['email'],
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class VerifySignupView(APIView):
+    """Verify email OTP and return JWT tokens for immediate login."""
+
+    permission_classes = (AllowAny,)
+
+    @extend_schema(
+        request=VerifySignupSerializer,
+        responses={200: TokenPairResponseSerializer},
+        description='Verify the signup OTP and activate the account.',
+        tags=['Auth'],
+    )
+    def post(self, request: Request) -> Response:
+        serializer = VerifySignupSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            user = signup_service.verify(**serializer.validated_data)
+        except SignupError as exc:
+            return Response({'message': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        refresh = RefreshToken.for_user(user)
+        return Response(
+            {
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class ResendSignupOtpView(APIView):
+    """Resend the signup verification code."""
+
+    permission_classes = (AllowAny,)
+
+    @extend_schema(
+        request=ResendSignupOtpSerializer,
+        responses={200: SignupResponseSerializer},
+        description='Send a new verification code for a pending signup.',
+        tags=['Auth'],
+    )
+    def post(self, request: Request) -> Response:
+        serializer = ResendSignupOtpSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data['email']
+        try:
+            signup_service.resend_otp(email=email)
+        except SignupError as exc:
+            return Response({'message': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {
+                'message': 'Verification code sent to your email.',
+                'email': email,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 class MeView(APIView):
     """Return the authenticated user's profile."""
 
@@ -106,6 +209,7 @@ class MeView(APIView):
                 'username': user.username,
                 'email': user.email,
                 'name': user.get_full_name() or user.username,
+                'is_superuser': user.is_superuser,
             },
             status=status.HTTP_200_OK,
         )

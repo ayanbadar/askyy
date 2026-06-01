@@ -12,9 +12,15 @@ import {
   login as loginRequest,
   loginWithGoogle as loginWithGoogleRequest,
   logout as logoutRequest,
+  verifySignup as verifySignupRequest,
   type LoginCredentials,
   type User,
+  type VerifySignupPayload,
 } from "@/api/auth";
+import {
+  updateAccountSettings,
+  type UpdateAccountSettingsPayload,
+} from "@/api/settings";
 import { clearAuthTokens, getAccessToken } from "@/lib/authTokens";
 
 interface AuthContextValue {
@@ -23,7 +29,9 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
   loginWithGoogle: (idToken: string) => Promise<void>;
+  completeSignup: (payload: VerifySignupPayload) => Promise<void>;
   logout: () => void;
+  updateProfile: (payload: UpdateAccountSettingsPayload) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -74,10 +82,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(profile);
   }, []);
 
+  const completeSignup = useCallback(async (payload: VerifySignupPayload) => {
+    await verifySignupRequest(payload);
+    const profile = await getMe();
+    setUser(profile);
+  }, []);
+
   const logout = useCallback(() => {
     logoutRequest();
     setUser(null);
   }, []);
+
+  const updateProfile = useCallback(
+    async (payload: UpdateAccountSettingsPayload) => {
+      const account = await updateAccountSettings(payload);
+      setUser((current) =>
+        current
+          ? {
+              ...current,
+              name: account.name,
+              email: account.email,
+              username: account.username,
+            }
+          : null,
+      );
+    },
+    [],
+  );
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -86,9 +117,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       login,
       loginWithGoogle,
+      completeSignup,
       logout,
+      updateProfile,
     }),
-    [user, isLoading, login, loginWithGoogle, logout],
+    [
+      user,
+      isLoading,
+      login,
+      loginWithGoogle,
+      completeSignup,
+      logout,
+      updateProfile,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
