@@ -22,7 +22,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["config", "core"]
+known-first-party = ["auth", "config", "core", "sources", "dashboard", "chat", "rag", "settings_app"]
 
 [tool.ruff.format]
 quote-style = "single"

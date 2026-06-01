@@ -1,4 +1,10 @@
-export { DashboardPage } from '@/pages/DashboardPage';
-export { HomePage } from '@/pages/HomePage';
-export { LoginPage } from '@/pages/LoginPage';
-export { NotFoundPage } from '@/pages/NotFoundPage';
+export { AdminDashboardPage } from "@/pages/AdminDashboardPage";
+export { ChatPage } from "@/pages/ChatPage";
+export { DashboardPage } from "@/pages/DashboardPage";
+export { DocumentsPage } from "@/pages/DocumentsPage";
+export { LoginPage } from "@/pages/LoginPage";
+export { SignupPage } from "@/pages/SignupPage";
+export { NotFoundPage } from "@/pages/NotFoundPage";
+export { SettingsPage } from "@/pages/SettingsPage";
+export { SourcePage } from "@/pages/SourcePage";
+export { UserDashboardPage } from "@/pages/UserDashboardPage";

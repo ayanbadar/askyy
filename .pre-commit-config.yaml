@@ -1,8 +1,5 @@
 # See https://pre-commit.com for more information
-# Install (from repo root):
-#   pip install -r requirements-dev.txt
-#   cd frontend && npm install
-#   pre-commit install
+# One-time setup (from repo root): ./scripts/setup-dev.sh
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks

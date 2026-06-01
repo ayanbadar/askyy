@@ -1,20 +1,41 @@
-import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import { AUTH_TOKEN_KEY } from '@/constants/auth';
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api';
+import axios, {
+  type AxiosError,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig,
+} from "axios";
+import { API_BASE_URL } from "@/config/api";
+import { clearAuthTokens, getAccessToken } from "@/lib/authTokens";
+import { refreshAccessToken } from "@/lib/refreshAccessToken";
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   timeout: 15_000,
 });
 
+type RetriableRequestConfig = InternalAxiosRequestConfig & {
+  _retry?: boolean;
+};
+
+function isAuthEndpoint(url: string | undefined): boolean {
+  if (!url) {
+    return false;
+  }
+
+  return (
+    url.includes("/auth/login") ||
+    url.includes("/auth/google") ||
+    url.includes("/auth/signup") ||
+    url.includes("/auth/refresh") ||
+    url.includes("/auth/me")
+  );
+}
+
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    const token = getAccessToken();
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -26,15 +47,37 @@ apiClient.interceptors.request.use(
 );
 
 apiClient.interceptors.response.use(
-  (response) => response,
-  (error: AxiosError<{ message?: string }>) => {
+  (response: AxiosResponse) => response,
+  async (error: AxiosError<{ message?: string }>) => {
+    const originalRequest = error.config as RetriableRequestConfig | undefined;
+    const status = error.response?.status;
+
+    if (
+      status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !isAuthEndpoint(originalRequest.url)
+    ) {
+      originalRequest._retry = true;
+
+      try {
+        const access = await refreshAccessToken();
+        originalRequest.headers.Authorization = `Bearer ${access}`;
+        return apiClient(originalRequest);
+      } catch {
+        clearAuthTokens();
+        window.dispatchEvent(new Event("auth:logout"));
+      }
+    }
+
     const message =
       error.response?.data?.message ??
       error.message ??
-      'An unexpected error occurred';
+      "An unexpected error occurred";
 
-    if (error.response?.status === 401) {
-      localStorage.removeItem(AUTH_TOKEN_KEY);
+    if (status === 401 && !isAuthEndpoint(originalRequest?.url)) {
+      clearAuthTokens();
+      window.dispatchEvent(new Event("auth:logout"));
     }
 
     return Promise.reject(new Error(message));
