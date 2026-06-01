@@ -1,3 +1,4 @@
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -30,6 +31,11 @@ INSTALLED_APPS = [
     # Local
     'core',
     'auth.apps.AuthConfig',
+    'sources',
+    'rag',
+    'chat',
+    'settings_app',
+    'dashboard',
 ]
 
 MIDDLEWARE = [
@@ -121,6 +127,42 @@ REST_FRAMEWORK = {
 
 # Google OAuth (Sign in with Google — Web client ID)
 GOOGLE_OAUTH_CLIENT_ID = env('GOOGLE_OAUTH_CLIENT_ID', default='')
+GOOGLE_OAUTH_CLIENT_SECRET = env('GOOGLE_OAUTH_CLIENT_SECRET', default='')
+GOOGLE_DRIVE_REDIRECT_URI = env(
+    'GOOGLE_DRIVE_REDIRECT_URI',
+    default='http://localhost:8000/api/sources/google/callback/',
+)
+GOOGLE_TOKEN_ENCRYPTION_KEY = env('GOOGLE_TOKEN_ENCRYPTION_KEY', default='')
+FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:5173')
+
+# RAG / Chat (OpenAI)
+OPENAI_API_KEY = env('OPENAI_API_KEY', default='')
+RAG_EMBEDDING_MODEL = env('RAG_EMBEDDING_MODEL', default='text-embedding-3-small')
+RAG_CHAT_MODEL = env('RAG_CHAT_MODEL', default='gpt-4o-mini')
+RAG_CHUNK_SIZE = env.int('RAG_CHUNK_SIZE', default=512)
+RAG_CHUNK_OVERLAP = env.int('RAG_CHUNK_OVERLAP', default=128)
+RAG_TOP_K = env.int('RAG_TOP_K', default=5)
+RAG_MAX_CITATIONS = env.int('RAG_MAX_CITATIONS', default=3)
+RAG_RETRIEVAL_CANDIDATES = env.int('RAG_RETRIEVAL_CANDIDATES', default=20)
+
+# Celery
+CELERY_BROKER_URL = env('REDIS_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = env('REDIS_URL', default='redis://localhost:6379/0')
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+# prefork/spawn pools break on Windows (ValueError unpacking _loc in trace.py)
+if sys.platform == 'win32':
+    CELERY_WORKER_POOL = 'solo'
+CELERY_BEAT_SCHEDULE = {
+    'sync-google-drive-every-5-minutes': {
+        'task': 'sources.tasks.sync_all_google_drive_connections',
+        'schedule': 300.0,
+    },
+    'index-pending-documents-every-minute': {
+        'task': 'rag.tasks.index_pending_documents',
+        'schedule': 60.0,
+    },
+}
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(
@@ -141,8 +183,23 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
 }
 
-# Development-only settings
-if DEBUG:
+# Email (Google SMTP / Gmail)
+EMAIL_SUBJECT_PREFIX = env('EMAIL_SUBJECT_PREFIX', default='Askyy ')
+SIGNUP_OTP_LIFETIME_MINUTES = env.int('SIGNUP_OTP_LIFETIME_MINUTES', default=10)
+SIGNUP_OTP_MAX_ATTEMPTS = env.int('SIGNUP_OTP_MAX_ATTEMPTS', default=5)
+
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = env(
+    'DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER or 'noreply@askyy.local'
+)
+
+if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')
+    EMAIL_PORT = env.int('EMAIL_PORT', default=587)
+    EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+elif DEBUG:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Production security settings

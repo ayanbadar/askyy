@@ -27,6 +27,7 @@ function isAuthEndpoint(url: string | undefined): boolean {
   return (
     url.includes("/auth/login") ||
     url.includes("/auth/google") ||
+    url.includes("/auth/signup") ||
     url.includes("/auth/refresh") ||
     url.includes("/auth/me")
   );

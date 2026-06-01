@@ -8,8 +8,12 @@ export function NotFoundPage() {
       <p className="mt-4 text-muted-foreground">
         The page you are looking for does not exist.
       </p>
-      <Button render={<Link to="/" />} className="mt-6" variant="outline">
-        Go back home
+      <Button
+        render={<Link to="/dashboard" />}
+        className="mt-6"
+        variant="outline"
+      >
+        Go to dashboard
       </Button>
     </section>
   );
