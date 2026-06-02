@@ -18,6 +18,5 @@ python-docx>=1.1,<2
 openpyxl>=3.1,<4
 tiktoken>=0.8,<1
 beautifulsoup4>=4.12,<5
-
-# Production (optional — uncomment when deploying)
-# gunicorn>=23.0,<24
+gunicorn>=23.0,<24
+whitenoise>=6.8,<7

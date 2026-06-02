@@ -201,21 +201,16 @@ cd backend && ruff check . && ruff format .
 
 ## Production
 
-Set environment variables:
+See **[DEPLOYMENT.md](../DEPLOYMENT.md)** for the full Oracle VM + Docker + GitHub Actions guide.
+
+Quick local production env vars:
 
 ```env
-DJANGO_SETTINGS_MODULE=config.settings
 DEBUG=False
+USE_HTTPS=False
 SECRET_KEY=<long-random-secret>
 ALLOWED_HOSTS=yourdomain.com
 DATABASE_URL=postgres://user:pass@host:5432/askyy
 CORS_ALLOWED_ORIGINS=https://yourdomain.com
-```
-
-Then:
-
-```bash
-python manage.py collectstatic --noinput
-python manage.py migrate
-gunicorn config.wsgi:application
+CSRF_TRUSTED_ORIGINS=https://yourdomain.com
 ```

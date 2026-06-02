@@ -1,0 +1,145 @@
+# Production stack — isolated from other apps via: docker compose -p askyy -f docker-compose.prod.yml up -d
+# See DEPLOYMENT.md for VM setup and GitHub Actions deploy.
+
+name: askyy
+
+services:
+  pgvector:
+    image: pgvector/pgvector:0.8.0-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-askyy}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-askyy}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - askyy-internal
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - askyy-internal
+
+  backend:
+    image: ${GHCR_IMAGE_PREFIX}/askyy-backend:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@pgvector:5432/${POSTGRES_DB:-askyy}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      pgvector:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_HOST_PORT:-8000}:8000"
+    networks:
+      - askyy-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/api/health/"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+
+  celery-worker:
+    image: ${GHCR_IMAGE_PREFIX}/askyy-backend:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@pgvector:5432/${POSTGRES_DB:-askyy}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      pgvector:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    entrypoint: []
+    command:
+      [
+        "celery",
+        "-A",
+        "config",
+        "worker",
+        "-l",
+        "info",
+        "--concurrency",
+        "2",
+      ]
+    networks:
+      - askyy-internal
+
+  celery-beat:
+    image: ${GHCR_IMAGE_PREFIX}/askyy-backend:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@pgvector:5432/${POSTGRES_DB:-askyy}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      pgvector:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    entrypoint: []
+    command: ["celery", "-A", "config", "beat", "-l", "info"]
+    networks:
+      - askyy-internal
+
+  frontend:
+    image: ${GHCR_IMAGE_PREFIX}/askyy-frontend:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:?Set VITE_API_BASE_URL in .env}
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_HOST_PORT:-3001}:80"
+    networks:
+      - askyy-internal
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  askyy-internal:
+    driver: bridge

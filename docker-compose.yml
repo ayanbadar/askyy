@@ -1,3 +1,5 @@
+# Local development only. Production: docker-compose.prod.yml (see DEPLOYMENT.md).
+
 services:
   pgvector:
     image: pgvector/pgvector:0.8.0-pg16
