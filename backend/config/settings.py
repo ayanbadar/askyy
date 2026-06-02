@@ -15,6 +15,10 @@ environ.Env.read_env(BASE_DIR / '.env')
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG')
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+# Docker health checks request 127.0.0.1 from inside the container.
+for _loopback in ('127.0.0.1', 'localhost'):
+    if _loopback not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_loopback)
 
 INSTALLED_APPS = [
     'django.contrib.admin',

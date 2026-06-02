@@ -263,7 +263,7 @@ If needed, lower Celery `--concurrency` in `docker-compose.prod.yml` or stop bea
 |---------|--------|
 | `pull access denied` | GHCR public or `docker login ghcr.io` on VM |
 | Frontend calls wrong API | Rebuild frontend: `VITE_API_BASE_URL` var in GitHub + redeploy |
-| 502 / unhealthy backend | `docker compose logs backend --tail=100` |
+| 502 / unhealthy backend | `docker compose logs backend --tail=100`; if Gunicorn is running but health fails, check `ALLOWED_HOSTS` includes `127.0.0.1` (Docker health check) — fixed automatically in recent backend builds |
 | DB errors | `docker compose logs pgvector`; verify `POSTGRES_PASSWORD` |
 | OTP emails not sent | `docker compose logs celery-worker`; verify `EMAIL_*` |
 | Redirect loop | `USE_HTTPS=True` without TLS proxy — set `False` for plain HTTP |
